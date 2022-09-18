@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+
 #include "matmul.h"
+
+int getpid();
+int pipe();
+int fork();
 
 int linear_mult(int *col_a, int *row_b, int n)
 {

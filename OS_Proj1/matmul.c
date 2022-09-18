@@ -3,11 +3,61 @@
 #include <sys/time.h>
 #include "matmul.h"
 
+
 void serial_mat_mult();
 void parallel_mat_mult(int numProc, int crashRate);
+void simulate_crash(int crashRate);
+int getpid();
+int pipe();
+int fork();
 
-int main(int argc, char **argv) 
-{
+void serial_mat_mult() {
+		int i, j, k;
+
+		for(i = 0; i < m; i++){
+				for(j = 0; j < p; j++){
+						C_serial[i][j] = linear_mult(A[i], B_tran[j], n);
+				}
+		}
+}
+
+void child_process_core(int i, int pipefd, int crashRate) {
+		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i, m);
+		simulate_crash(crashRate);
+		
+		/** Design and implement child processes function.
+			* Each child process takes care of a part of the calculation.
+			* Send the result to the parent via pipe. 
+			**/
+}
+
+void parallel_mat_mult(int numProc, int crashRate) {
+		int pid[numProc];
+		int pipefd[numProc][2];
+		int wstatus;
+		int i;
+		int runningChild = numProc;
+
+		for(i = 0; i < numProc; i++)
+		{
+				pipe(pipefd[i]);
+				pid[i] = fork();
+
+				if(pid[i] == 0) {
+					 child_process_core(i, pipefd[i][1], crashRate);
+						exit(0);
+				} else if(pid[i] < 0) {
+						printf("Fork failed\n");
+						exit(0);
+				}
+		}
+		
+		/** Parent process waits for the children processes.
+			* Read the results from each child process via pipe, and store them into C_parallel.
+			* Design and implement the crash recovery **/
+}
+
+int main(int argc, char **argv) {
 		int crashRate = 0;
 		struct timeval  t_begin, t_end;
 
@@ -71,54 +121,5 @@ int main(int argc, char **argv)
 		}
 		printf("================================================\n");
 		return 0;
-}
-
-void serial_mat_mult()
-{
-		int i, j, k;
-
-		for(i = 0; i < m; i++){
-				for(j = 0; j < p; j++){
-						C_serial[i][j] = linear_mult(A[i], B_tran[j], n);
-				}
-		}
-}
-
-void child_process_core(int i, int pipefd, int crashRate)
-{
-		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i, m);
-		simulate_crash(crashRate);
-		
-		/** Design and implement child processes function.
-			* Each child process takes care of a part of the calculation.
-			* Send the result to the parent via pipe. 
-			**/
-}
-
-void parallel_mat_mult(int numProc, int crashRate)
-{
-		int pid[numProc];
-		int pipefd[numProc][2];
-		int wstatus;
-		int i;
-		int runningChild = numProc;
-
-		for(i = 0; i < numProc; i++)
-		{
-				pipe(pipefd[i]);
-				pid[i] = fork();
-
-				if(pid[i] == 0) {
-					 child_process_core(i, pipefd[i][1], crashRate);
-						exit(0);
-				} else if(pid[i] < 0) {
-						printf("Fork failed\n");
-						exit(0);
-				}
-		}
-		
-		/** Parent process waits for the children processes.
-			* Read the results from each child process via pipe, and store them into C_parallel.
-			* Design and implement the crash recovery **/
 }
 
