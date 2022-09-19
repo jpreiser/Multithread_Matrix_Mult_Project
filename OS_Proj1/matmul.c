@@ -14,13 +14,15 @@ int fork();
 
 void serial_mat_mult() 
 {
-		int i, j;
+	int i, j;
 
-		for(i = 0; i < m; i++){
-				for(j = 0; j < p; j++){
-						C_serial[i][j] = linear_mult(A[i], B_tran[j], n);
-				}
+	for(i = 0; i < m; i++)
+	{
+		for(j = 0; j < p; j++)
+		{
+			C_serial[i][j] = linear_mult(A[i], B_tran[j], n);
 		}
+	}
 }
 
 void child_process_core(int i, int pipefd, int crashRate) 
@@ -35,14 +37,15 @@ void child_process_core(int i, int pipefd, int crashRate)
 		
 		int j, k, l;
 
-		for (j = 0; j < p; j++) 
-		{
-			k = linear_mult(A[i], B_tran[j], p);
-			printf("writing %d ", k);
-			l = write(pipefd, &k, sizeof(int));
-			close(pipefd);
-		}
-		printf("\n");
+			for (j = 0; j < p; j++) 
+			{
+				k = linear_mult(A[i], B_tran[j], p);
+				printf("writing %d ", k);
+				l = write(pipefd, &k, sizeof(k)*m);
+				printf("Size %d ", sizeof(k));
+				close(pipefd);
+			}
+			printf("\n");
 }
 
 void parallel_mat_mult(int numProc, int crashRate) 
@@ -75,13 +78,16 @@ void parallel_mat_mult(int numProc, int crashRate)
 				for (j = 0; j < p; j++) 
 				{
 					close(pipefd[i][1]);
-					k = read(pipefd[i][0], pipefd[i], sizeof(int));
-					C_parallel[i][j] = *pipefd[i];
-					printf("read %d, size %d ", *pipefd[i], k);
-					printf("\n");
-					close(pipefd[i][0]);
+					while ((k = read(pipefd[i][0], pipefd[i], sizeof(pipefd[i])))> 0) 
+					{
+						C_parallel[i][j] = *pipefd[i];
+						printf("read %d, size %d ", *pipefd[i], k);
+						close(pipefd[i][0]);
+						printf("\n");
+					}
 				}
 			}
+			wait(NULL);
 		}
 
 		/** Parent process waits for the children processes.
