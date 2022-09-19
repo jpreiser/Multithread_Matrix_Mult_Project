@@ -2,7 +2,7 @@
 /** Matrices: C = A * B 
 	* B_tran is a transposed matrix of B,	which flips a matrix over its diagonal.
 	* B_tran[i][j] = B[j][i]
-	* We use the trnasposed matrix B for easier matrix multiplication.
+	* We use the transposed matrix B for easier matrix multiplication.
 	*
 	* C_serial stores the result from the serial calcuation.
 	* C_parallel stores the result from the parallel (multi-process) calculation.

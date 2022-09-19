@@ -3,13 +3,15 @@
 #include <sys/time.h>
 #include "matmul.h"
 
-
 void serial_mat_mult();
 void parallel_mat_mult(int numProc, int crashRate);
 void simulate_crash(int crashRate);
 int getpid();
 int pipe();
 int fork();
+int write();
+int close();
+
 
 void serial_mat_mult() {
 		int i, j, k;
@@ -22,11 +24,13 @@ void serial_mat_mult() {
 }
 
 void child_process_core(int i, int pipefd, int crashRate) {
-		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i, m);
+		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i+1, m);
 		simulate_crash(crashRate);
 		
 		// i is thread index, pipefd is the pipe file descriptor 
 		// C_parallel [i][j]
+		// A = m rows, n cols
+		// b_tran = p rows, n cols
 
 		/** Design and implement child processes function.
 			* Each child process takes care of a part of the calculation.
@@ -36,39 +40,41 @@ void child_process_core(int i, int pipefd, int crashRate) {
 		int j, k;
 
 		for (j = 0; j < p; j++) {
-			C_parallel[i][j] = linear_mult(A[i], B_tran[j], n);
+			k = linear_mult(A[i], B_tran[j], p);
+			write(pipefd, k, 4);
 		}
 
 
 }
 
+// numProc is number of processes
 void parallel_mat_mult(int numProc, int crashRate) {
 		int pid[numProc];
 		int pipefd[numProc][2];
-		int wstatus; // wait status?
-		int i; // thread index
+		int wstatus;
+		int i;
 		int runningChild = numProc;
 
 		for(i = 0; i < numProc; i++)
 		{
-				pipe(pipefd[i]);
-				pid[i] = fork();
+			pipe(pipefd[i]);
+			pid[i] = fork();
 
-				if(pid[i] == 0) {
-					 child_process_core(i, pipefd[i][1], crashRate);
-						exit(0);
-				} else if(pid[i] < 0) {
-						printf("Fork failed\n");
-						exit(0);
-				}
+			if(pid[i] < 0) 
+			{
+					printf("Fork failed\n");
+					exit(0);
+			} else if(pid[i] == 0) 
+				{
+					child_process_core(i, pipefd[i][1], crashRate);
+					close(pipefd[i][0]);
+					exit(0);
+					
+				} 
 		}
-		
 		/** Parent process waits for the children processes.
 			* Read the results from each child process via pipe, and store them into C_parallel.
 			* Design and implement the crash recovery **/
-		
-
-
 }
 
 int main(int argc, char **argv) {
