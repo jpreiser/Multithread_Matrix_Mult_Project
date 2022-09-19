@@ -25,17 +25,28 @@ void child_process_core(int i, int pipefd, int crashRate) {
 		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i, m);
 		simulate_crash(crashRate);
 		
+		// i is thread index, pipefd is the pipe file descriptor 
+		// C_parallel [i][j]
+
 		/** Design and implement child processes function.
 			* Each child process takes care of a part of the calculation.
 			* Send the result to the parent via pipe. 
 			**/
+		
+		int j, k;
+
+		for (j = 0; j < p; j++) {
+			C_parallel[i][j] = linear_mult(A[i], B_tran[j], n);
+		}
+
+
 }
 
 void parallel_mat_mult(int numProc, int crashRate) {
 		int pid[numProc];
 		int pipefd[numProc][2];
-		int wstatus;
-		int i;
+		int wstatus; // wait status?
+		int i; // thread index
 		int runningChild = numProc;
 
 		for(i = 0; i < numProc; i++)
@@ -55,6 +66,9 @@ void parallel_mat_mult(int numProc, int crashRate) {
 		/** Parent process waits for the children processes.
 			* Read the results from each child process via pipe, and store them into C_parallel.
 			* Design and implement the crash recovery **/
+		
+
+
 }
 
 int main(int argc, char **argv) {
