@@ -10,6 +10,7 @@ void parallel_mat_mult(int numProc, int crashRate);
 void simulate_crash(int crashRate);
 int getpid();
 int fork();
+int wait();
 
 
 void serial_mat_mult() 
