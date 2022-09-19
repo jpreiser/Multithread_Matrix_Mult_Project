@@ -9,11 +9,7 @@ void serial_mat_mult();
 void parallel_mat_mult(int numProc, int crashRate);
 void simulate_crash(int crashRate);
 int getpid();
-int pipe();
 int fork();
-int write();
-int close();
-int read(int filed, void *buf, size_t bytes);
 
 
 void serial_mat_mult() {
