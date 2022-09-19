@@ -12,8 +12,9 @@ int getpid();
 int fork();
 
 
-void serial_mat_mult() {
-		int i, j, k;
+void serial_mat_mult() 
+{
+		int i, j;
 
 		for(i = 0; i < m; i++){
 				for(j = 0; j < p; j++){
@@ -22,7 +23,8 @@ void serial_mat_mult() {
 		}
 }
 
-void child_process_core(int i, int pipefd, int crashRate) {
+void child_process_core(int i, int pipefd, int crashRate) 
+{
 		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i+1, m);
 		simulate_crash(crashRate);
 
@@ -33,22 +35,22 @@ void child_process_core(int i, int pipefd, int crashRate) {
 		
 		int j, k, l;
 
-		for (j = 0; j < p; j++) {
+		for (j = 0; j < p; j++) 
+		{
 			k = linear_mult(A[i], B_tran[j], p);
-			printf("writing %d to pipe, ", k);
-			l = write(pipefd[j][1], k, 4);
-			printf("%d ", l);
+			printf("writing %d ", k);
+			l = write(pipefd, &k, sizeof(int));
+			close(pipefd);
 		}
 		printf("\n");
-
 }
 
-// numProc is number of processes
-void parallel_mat_mult(int numProc, int crashRate) {
+void parallel_mat_mult(int numProc, int crashRate) 
+{
 		int pid[numProc];
 		int pipefd[numProc][2];
 		int wstatus;
-		int i, j;
+		int i, j, k;
 		int runningChild = numProc;
 
 		for(i = 0; i < numProc; i++)
@@ -58,21 +60,30 @@ void parallel_mat_mult(int numProc, int crashRate) {
 
 			if(pid[i] < 0) 
 			{
-					printf("Fork failed\n");
-					exit(0);
+				printf("Fork failed\n");
+				exit(0);
 			} 
 			else if(pid[i] == 0) 
 			{
-					child_process_core(i, pipefd[i][1], crashRate);
-					close(pipefd[i][0]);
-					exit(0);
-			} 
-			else
-			{
+				close(pipefd[i][0]);
+				child_process_core(i, pipefd[i][1], crashRate);
 				close(pipefd[i][1]);
-				//j = read(C_parallel[i][j], pipefd[i][0], 4);
+				exit(0);
+			} 
+			else 
+			{
+				for (j = 0; j < p; j++) 
+				{
+					close(pipefd[i][1]);
+					k = read(pipefd[i][0], pipefd[i], sizeof(int));
+					C_parallel[i][j] = *pipefd[i];
+					printf("read %d, size %d ", *pipefd[i], k);
+					printf("\n");
+					close(pipefd[i][0]);
+				}
 			}
 		}
+
 		/** Parent process waits for the children processes.
 			* Read the results from each child process via pipe, and store them into C_parallel.
 			* Design and implement the crash recovery **/
