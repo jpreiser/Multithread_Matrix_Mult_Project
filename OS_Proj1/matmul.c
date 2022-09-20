@@ -77,7 +77,7 @@ void parallel_mat_mult(int numProc, int crashRate)
 					close(pipefd[i][1]);
 					int r[p];
 					if (read(pipefd[i][0], r, sizeof(int)*p) < sizeof(int)) break;
-					for (j = 0; j < p; j++) 
+					for (j = 0; j < m; j++) 
 					{
 						C_parallel[i][j] = r[j];
 					}
