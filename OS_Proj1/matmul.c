@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include "matmul.h"
@@ -20,12 +21,10 @@ void serial_mat_mult()
 	{
 		for(j = 0; j < p; j++)
 		{
-			C_serial[i][j] = linear_mult(A[i], B_tran[j], n);
+			C_serial[i][j] = linear_mult(A[i], B_tran[j], p);
 		}
 	}
 }
-
-// b matmul.c:84
 
 void child_process_core(int i, int pipefd, int crashRate) 
 {
@@ -45,6 +44,7 @@ void child_process_core(int i, int pipefd, int crashRate)
 				k = linear_mult(A[i], B_tran[j], p);
 				write(pipefd, &k, sizeof(k));
 			}
+		pthread_exit(0);
 }
 
 void parallel_mat_mult(int numProc, int crashRate) 
@@ -74,17 +74,19 @@ void parallel_mat_mult(int numProc, int crashRate)
 			} 
 			else 
 			{
-					close(pipefd[i][1]);
-					int r[p];
-					if (read(pipefd[i][0], r, sizeof(int)*p) < sizeof(int)) break;
-					for (j = 0; j < m; j++) 
-					{
-						C_parallel[i][j] = r[j];
-					}
-					close(pipefd[i][0]);
+				pid_t c_pid = waitpid(pid[i], &wstatus, 0); 
+				close(pipefd[i][1]);
+				int r[p];
+				if (read(pipefd[i][0], r, sizeof(int)*p) < sizeof(int)) break;
+				for (j = 0; j < p; j++) 
+				{
+					C_parallel[i][j] = r[j];
+				}
+				close(pipefd[i][0]);
 			}
-			wait(NULL);
+			
 		}
+
 
 		/** Parent process waits for the children processes.
 			* Read the results from each child process via pipe, and store them into C_parallel.
