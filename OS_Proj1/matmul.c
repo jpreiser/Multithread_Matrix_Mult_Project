@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include "matmul.h"
 
 void serial_mat_mult();
@@ -44,6 +45,7 @@ void child_process_core(int i, int pipefd, int crashRate)
 				k = linear_mult(A[i], B_tran[j], p);
 				write(pipefd, &k, sizeof(k));
 			}
+
 		pthread_exit(0);
 }
 
@@ -57,6 +59,7 @@ void parallel_mat_mult(int numProc, int crashRate)
 
 		for(i = 0; i < numProc; i++)
 		{
+			RETRY_ON_CRASH:
 			pipe(pipefd[i]);
 			pid[i] = fork();
 
@@ -75,14 +78,22 @@ void parallel_mat_mult(int numProc, int crashRate)
 			else 
 			{
 				pid_t c_pid = waitpid(pid[i], &wstatus, 0); 
-				close(pipefd[i][1]);
-				int r[p];
-				if (read(pipefd[i][0], r, sizeof(int)*p) < sizeof(int)) break;
-				for (j = 0; j < p; j++) 
+				if (WIFEXITED(wstatus)) 
 				{
-					C_parallel[i][j] = r[j];
+					close(pipefd[i][1]);
+					int r[p];
+					if (read(pipefd[i][0], r, sizeof(int)*p) < sizeof(int)) break;
+					for (j = 0; j < p; j++) 
+					{
+						C_parallel[i][j] = r[j];
+					}
+					close(pipefd[i][0]);
 				}
-				close(pipefd[i][0]);
+				else if (!WIFEXITED(wstatus))
+				{
+					close(pipefd[i][0]);
+					goto RETRY_ON_CRASH;
+				}
 			}
 			
 		}
