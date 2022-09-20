@@ -11,7 +11,6 @@ void simulate_crash(int crashRate);
 int getpid();
 int fork();
 int wait();
-int x;
 
 void serial_mat_mult() 
 {
@@ -42,12 +41,10 @@ void child_process_core(int i, int pipefd, int crashRate)
 
 			for (j = 0; j < p; j++)
 			{
-				x = linear_mult(A[i], B_tran[j], p);
-				printf("writing %d ", k);
-				write(pipefd, &x, sizeof(k));
-				close(pipefd);
+				k = 0;
+				k = linear_mult(A[i], B_tran[j], p);
+				write(pipefd, &k, sizeof(k));
 			}
-			printf("\n");
 }
 
 void parallel_mat_mult(int numProc, int crashRate) 
@@ -77,17 +74,14 @@ void parallel_mat_mult(int numProc, int crashRate)
 			} 
 			else 
 			{
-				for (j = 0; j < p; j++) 
-				{
 					close(pipefd[i][1]);
-					while ((k = read(pipefd[i][0], pipefd[i], sizeof(pipefd[i])))> 0) 
+					int r[p];
+					if (read(pipefd[i][0], r, sizeof(int)*p) < sizeof(int)) break;
+					for (j = 0; j < p; j++) 
 					{
-						C_parallel[i][j] = *pipefd[i];
-						printf("read %d, size %d ", *pipefd[i], k);
-						close(pipefd[i][0]);
-						printf("\n");
+						C_parallel[i][j] = r[j];
 					}
-				}
+					close(pipefd[i][0]);
 			}
 			wait(NULL);
 		}
