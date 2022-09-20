@@ -11,7 +11,7 @@ void simulate_crash(int crashRate);
 int getpid();
 int fork();
 int wait();
-
+int x;
 
 void serial_mat_mult() 
 {
@@ -26,6 +26,8 @@ void serial_mat_mult()
 	}
 }
 
+// b matmul.c:84
+
 void child_process_core(int i, int pipefd, int crashRate) 
 {
 		printf("The child process (pid:%d) created to calculate job #(%d/%d).\n", getpid(), i+1, m);
@@ -38,12 +40,11 @@ void child_process_core(int i, int pipefd, int crashRate)
 		
 		int j, k, l;
 
-			for (j = 0; j < p; j++) 
+			for (j = 0; j < p; j++)
 			{
-				k = linear_mult(A[i], B_tran[j], p);
+				x = linear_mult(A[i], B_tran[j], p);
 				printf("writing %d ", k);
-				l = write(pipefd, &k, sizeof(k)*m);
-				printf("Size %d ", sizeof(k));
+				write(pipefd, &x, sizeof(k));
 				close(pipefd);
 			}
 			printf("\n");
@@ -113,7 +114,7 @@ int main(int argc, char **argv) {
 				crashRate = atoi(argv[2]);
 				if(crashRate < 0) crashRate = 0;
 				if(crashRate > 30) crashRate = 30; 
-				printf("Child processes' crash rate: %d\%\n", crashRate);
+				printf("Child processes' crash rate: %d percent\n", crashRate);
 		}
 
 		read_matrix(argv[1]);
